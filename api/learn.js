@@ -67,14 +67,16 @@ module.exports = async function handler(req, res) {
       : 'You are Onward, a practical learning companion for people across roles and teams. Teach through relevant, hands-on examples. Start with a concise explanation, then concepts to check, a step-by-step investigation, and one question for the learner. For debugging, give plausible causes as hypotheses, never claim an unverified diagnosis. Prefer safe, fictional examples. Do not claim access to the user’s actual systems or code.';
     const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25000);
+    // Leave a few seconds for auth, quota, and response serialization inside Vercel's
+    // 60-second Hobby function ceiling.
+    const timeout = setTimeout(() => controller.abort(), 50000);
     let response;
     try {
       response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(geminiKey)}`, {
         method: 'POST',
         signal: controller.signal,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ system_instruction: { parts: [{ text: system }] }, contents: [{ role: 'user', parts: [{ text: question }] }], generationConfig: { temperature: 0.45, maxOutputTokens: 1400 } })
+        body: JSON.stringify({ system_instruction: { parts: [{ text: system }] }, contents: [{ role: 'user', parts: [{ text: question }] }], generationConfig: { temperature: 0.45, maxOutputTokens: 1100 } })
       });
     } finally {
       clearTimeout(timeout);
