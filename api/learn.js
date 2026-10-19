@@ -44,6 +44,24 @@ module.exports = async function handler(req, res) {
     const mode = body.mode === 'practice' ? 'practice' : 'explain';
     if (!question) return send(res, 400, { code: 'QUESTION_REQUIRED', error: 'Add a question to continue.' });
 
+    // Reserve a per-user daily request before calling Gemini. The database function
+    // serializes concurrent calls for the same user so refreshing or parallel requests
+    // cannot bypass the cap.
+    const quotaResponse = await fetch(supabaseUrl.replace(/\/$/, '') + '/rest/v1/rpc/consume_gemini_daily_quota', {
+      method: 'POST',
+      headers: { apikey: supabaseKey, Authorization: auth, 'Content-Type': 'application/json' },
+      body: '{}'
+    });
+    const quotaResult = await quotaResponse.json().catch(() => null);
+    if (!quotaResponse.ok || !Array.isArray(quotaResult) || !quotaResult[0]) {
+      console.error('Onward Gemini quota check failed', { httpStatus: quotaResponse.status });
+      return send(res, 503, { code: 'GEMINI_QUOTA_SETUP_REQUIRED', error: 'The per-user AI limit is not set up yet. Apply supabase/gemini-quota.sql in the connected Supabase project, then try again.' });
+    }
+    const quota = quotaResult[0];
+    if (!quota.allowed) {
+      return send(res, 429, { code: 'USER_DAILY_QUOTA_EXCEEDED', error: `You’ve used all ${quota.daily_limit} AI requests for today. Your limit resets at ${new Date(quota.resets_at).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' })} UTC.`, quota: { used: quota.used, limit: quota.daily_limit, remaining: 0, resetsAt: quota.resets_at } });
+    }
+
     const system = mode === 'practice'
       ? 'Create one short, practical developer learning exercise from the requested technology and focus. Return ONLY valid JSON with keys question (string), options (array of exactly 3 short strings), answer (integer 0, 1, or 2), explanation (string), and hint (string). Use fictional examples and do not invent facts about the user’s environment.'
       : 'You are Onward, a practical learning companion for people across roles and teams. Teach through relevant, hands-on examples. Start with a concise explanation, then concepts to check, a step-by-step investigation, and one question for the learner. For debugging, give plausible causes as hypotheses, never claim an unverified diagnosis. Prefer safe, fictional examples. Do not claim access to the user’s actual systems or code.';
@@ -68,7 +86,7 @@ module.exports = async function handler(req, res) {
     }
     const text = result.candidates?.[0]?.content?.parts?.map(part => part.text || '').join('').trim();
     if (!text) return send(res, 502, { code: 'GEMINI_EMPTY_RESPONSE', error: 'Gemini returned an empty response. Try rephrasing the question.' });
-    return send(res, 200, { text });
+    return send(res, 200, { text, quota: { used: quota.used, limit: quota.daily_limit, remaining: Math.max(0, quota.daily_limit - quota.used), resetsAt: quota.resets_at } });
   } catch (error) {
     if (error.name === 'AbortError') return send(res, 504, { code: 'GEMINI_TIMEOUT', error: 'Gemini took too long to respond. Please try again.' });
     console.error('Onward AI request failed', { name: error.name, message: String(error.message || '').slice(0, 250) });
