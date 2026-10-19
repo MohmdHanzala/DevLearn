@@ -28,6 +28,8 @@ Add these variables to the Vercel project's Production environment (and Preview 
 - `GEMINI_API_KEY` — an active key created for the Gemini API in Google AI Studio. Keep it server-side; never add it to frontend code or Git.
 - `GEMINI_MODEL` — optional model override. Defaults to `gemini-3.8-flash`.
 
+The AI endpoint enforces a per-account limit of 20 Gemini requests per UTC day. Apply `supabase/gemini-quota.sql` in the connected Supabase project to enable the atomic database counter. The remaining daily requests and reset time are shown after each successful generation. Failed provider attempts reserve a request slot too, which prevents parallel retries from exceeding the cap.
+
 The `/api/learn` response distinguishes rejected keys, model errors, quota limits, missing environment variables, and temporary upstream failures. It does not log prompts or API keys. If a provider request still fails, inspect Vercel → Functions → Logs and follow the returned error guidance. Google's Gemini API documentation lists [provider error codes and remedies](https://ai.google.dev/gemini-api/docs/generate-content/api-errors).
 
 ## Workspaces
