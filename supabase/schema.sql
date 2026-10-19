@@ -183,15 +183,27 @@ $$;
 
 drop function if exists public.join_workspace(text);
 create or replace function public.join_workspace(p_code text)
-returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
-declare v_invite public.organization_invites%rowtype; v_email text := lower(coalesce(auth.jwt() ->> 'email', '')); v_status text;
+returns jsonb language plpgsql security definer set search_path = public, extensions, pg_temp as $$
+declare
+  v_invite public.organization_invites%rowtype;
+  v_email text := lower(coalesce(auth.jwt() ->> 'email', ''));
+  v_email_verified boolean;
+  v_status text;
 begin
   if auth.uid() is null then raise exception 'Sign in to join a workspace.'; end if;
   select * into v_invite from public.organization_invites where invite_code = trim(p_code) and expires_at > now();
   if not found then raise exception 'That invitation is invalid or expired.'; end if;
   if v_invite.email_domain is not null and split_part(v_email, '@', 2) <> v_invite.email_domain then raise exception 'This invitation is limited to a different email domain.'; end if;
-  if v_invite.invited_email is not null and v_email <> v_invite.invited_email then raise exception 'This invitation was sent to a different email address.'; end if;
-  if exists (select 1 from public.organization_members where organization_id = v_invite.organization_id and user_id = auth.uid()) then
+  if v_invite.invited_email is not null then
+    if v_email <> v_invite.invited_email then raise exception 'Sign in with the email address this invitation was sent to.'; end if;
+    select email_confirmed_at is not null into v_email_verified from auth.users where id = auth.uid() and lower(email) = v_invite.invited_email;
+    if not coalesce(v_email_verified, false) then raise exception 'Confirm the invited email address before accepting this invitation.'; end if;
+    insert into public.organization_members(organization_id, user_id, department_id, role)
+    values (v_invite.organization_id, auth.uid(), v_invite.department_id, 'member')
+    on conflict (organization_id, user_id) do nothing;
+    update public.organization_join_requests
+      set status = 'approved', decided_at = now(), decided_by = null
+      where organization_id = v_invite.organization_id and user_id = auth.uid() and status = 'pending';
     return jsonb_build_object('organization_id', v_invite.organization_id, 'status', 'joined');
   end if;
   insert into public.organization_join_requests(organization_id, user_id, requested_email, department_id, invite_id)
