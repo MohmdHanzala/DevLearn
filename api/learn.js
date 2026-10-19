@@ -47,7 +47,7 @@ module.exports = async function handler(req, res) {
     const system = mode === 'practice'
       ? 'Create one short, practical developer learning exercise from the requested technology and focus. Return ONLY valid JSON with keys question (string), options (array of exactly 3 short strings), answer (integer 0, 1, or 2), explanation (string), and hint (string). Use fictional examples and do not invent facts about the user’s environment.'
       : 'You are DevLearn, a careful developer learning companion. Teach through practical examples. Start with a concise explanation, then concepts to check, a step-by-step investigation, and one question for the learner. For debugging, give plausible causes as hypotheses, never claim an unverified diagnosis. Prefer safe, fictional examples. Do not claim access to the user’s actual systems or code.';
-    const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+    const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 25000);
     let response;
