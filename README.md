@@ -1,39 +1,48 @@
 # DevLearn
 
-DevLearn is a small full-stack developer learning app. It uses Supabase Auth for email/password accounts, Supabase Postgres with row-level security for private learning notes, a Vercel serverless function for AI requests, and the Gemini Developer API for explanations and practice exercises.
+DevLearn is a developer learning companion for individuals and teams across companies, departments, and email domains. People can keep notes private, create or join a workspace, invite colleagues across domains, and deliberately share learning notes with that workspace. It does not rank employees or expose private notes to administrators.
 
-## Set up Supabase
+## Services
 
-1. Create a Supabase project on the free plan.
-2. In **Project Settings → API**, copy the Project URL and the publishable (or legacy anon) key.
-3. Open **SQL Editor** and run [`supabase/schema.sql`](supabase/schema.sql).
-4. In **Authentication → URL Configuration**, set the Site URL to your deployed Vercel URL. Add your local development URL to the allowed redirect URLs if needed.
-5. Email/password sign-in is enabled by default. Configure SMTP before relying on confirmation emails in production; otherwise use the project’s available auth email behavior and test the flow.
+- Supabase Auth and Postgres with row-level security for accounts, personal notes, organizations, departments, and invitations.
+- Vercel serverless functions for the configuration endpoint and authenticated AI requests.
+- Google Gemini API for practical explanations and exercises.
+- Static HTML, CSS, and JavaScript frontend.
 
-## Configure AI
+## Supabase setup
 
-Create a Gemini API key in Google AI Studio. Add these environment variables to the Vercel project:
+1. Create a Supabase project.
+2. In Project Settings → API, copy the Project URL and the publishable key (or legacy anon key).
+3. Open SQL Editor and run [`supabase/schema.sql`](supabase/schema.sql). The script adds organization tables and workspace RPCs, enables row-level security, and upgrades the existing personal notes table.
+4. In Authentication → URL Configuration, set the Site URL to your deployed Vercel URL and add local or preview URLs to the allowed redirect URLs when needed.
+5. Configure email delivery and confirmation behavior before relying on sign-up emails in production.
 
-- `SUPABASE_URL` — Supabase project URL
-- `SUPABASE_PUBLISHABLE_KEY` — Supabase public publishable key (the app also accepts the older `SUPABASE_ANON_KEY`)
-- `GEMINI_API_KEY` — Gemini API key (server-side only)
+## Vercel environment
 
-The Vercel function checks the Supabase access token before sending a question to Gemini. The client sends only the specific prompt submitted in the Explain or Practice screen. Do not submit passwords, access tokens, customer data, source code that your employer considers confidential, or other sensitive material. Gemini’s free tier may use submitted content to improve Google products; review the current [Gemini API terms and pricing](https://ai.google.dev/gemini-api/docs/pricing) before using it with work material.
+Add these variables to the Vercel project's Production environment (and Preview if used), then redeploy:
 
-## Deploy to Vercel
+- `SUPABASE_URL` — Supabase project URL.
+- `SUPABASE_PUBLISHABLE_KEY` — the public publishable key. The legacy `SUPABASE_ANON_KEY` is also accepted.
+- `GEMINI_API_KEY` — an active key created for the Gemini API in Google AI Studio. Keep it server-side; never add it to frontend code or Git.
+- `GEMINI_MODEL` — optional model override. Defaults to `gemini-2.5-flash`.
 
-Vercel Hobby is limited to personal, non-commercial use. A company-internal or business deployment needs a Vercel plan that permits commercial use; check current plan terms before publishing for ACME.
+The `/api/learn` response distinguishes rejected keys, model errors, quota limits, missing environment variables, and temporary upstream failures. It does not log prompts or API keys. If a provider request still fails, inspect Vercel → Functions → Logs and follow the returned error guidance. Google's Gemini API documentation lists [provider error codes and remedies](https://ai.google.dev/gemini-api/docs/generate-content/api-errors).
 
-1. Push this folder to a Git repository you control.
-2. Import the repository in Vercel and keep the project as a static site with the included serverless `api/learn.js` function.
-3. Add the three server environment variables above. Do not prefix the Gemini key with `VITE_` or expose it in `config.js`.
-4. The public Supabase URL and publishable key are read by `/api/config`; they are intentionally browser-visible. The Gemini key is only used in `/api/learn` and must remain server-side.
-5. Deploy, then add the final Vercel URL to Supabase Auth’s allowed URLs and set it as the Site URL.
-6. Test account creation, sign-in, note creation/deletion, explanation, and practice generation in the deployed site.
+## Workspaces
 
-## Limitations
+- Each account starts with a private personal workspace.
+- Any signed-in user can create a workspace with a company, domain, project, or department name. No ACME-specific name or email domain is hard-coded.
+- Owners and admins can add departments and create 14-day invitation codes for the whole workspace or a department.
+- Invitations accept any email domain by default. An administrator can optionally restrict a code to one email domain.
+- Members can see workspace notes only when the author explicitly marks them shared. Personal notes stay visible to their author. Workspace row-level policies isolate different organizations.
+- Share sanitized, verified troubleshooting notes only. Do not put employer-confidential source code, credentials, customer data, or internal personal information into an AI prompt.
 
-- Free-tier quotas and inactivity/pause rules can change. Review the providers’ current plan details.
-- AI-generated explanations are educational suggestions, not confirmed diagnoses of a company environment.
-- The database persists notes per user. Some progress and review interactions are still session-only and are not yet stored as durable learning history.
-- No team library or organization-wide account provisioning is included in this first full-stack version.
+## Deploy
+
+Import this repository into Vercel with the default static frontend and serverless `api/` functions. Set the environment variables, deploy, update Supabase Auth's allowed URLs to include the final Vercel URL, and run the SQL setup. Verify sign-up, note saving, one AI explanation, and workspace creation/join using separate accounts.
+
+Vercel Hobby is intended for personal, non-commercial use. Use a plan that permits the intended company or team deployment before rolling this out for business use. Review current provider plans and terms before using work content.
+
+## Current scope
+
+This version provides private learning notes, opt-in workspace sharing, departments, and invitation-code onboarding. It does not yet include SSO/SCIM, audit exports, retention controls, team analytics, or a reviewed-publication workflow. Workspace learning data is not an employee performance measure.

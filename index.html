@@ -9,7 +9,7 @@
 <body>
 <aside class="sidebar">
   <a class="brand" href="#home"><span class="brand-icon"><svg viewBox="0 0 24 24"><path d="M12 3.5 14.2 9.8 20.5 12l-6.3 2.2L12 20.5l-2.2-6.3L3.5 12l6.3-2.2L12 3.5Z"/><path d="m19 3 .7 2.3L22 6l-2.3.7L19 9l-.7-2.3L16 6l2.3-.7L19 3Z"/></svg></span><span>devlearn<span class="brand-dot">.</span></span></a>
-  <div class="workspace-label">WORKSPACE <button class="tiny-icon" title="Workspace options">⌄</button></div>
+  <div class="workspace-label"><span id="workspace-current">PERSONAL WORKSPACE</span> <button class="tiny-icon" title="Switch or manage workspaces" aria-label="Switch or manage workspaces">⌄</button></div>
   <nav class="nav-group" aria-label="Main navigation">
     <button class="nav-link active" data-page="home"><span class="nav-icon">⌂</span>Overview</button>
     <button class="nav-link" data-page="learn"><span class="nav-icon">◉</span>Explain my work</button>
@@ -24,4 +24,4 @@
 <main class="main"><header class="topbar"><div class="breadcrumbs"><span>Workspace</span><span class="crumb-slash">/</span><b id="crumb-current">Overview</b></div><div class="top-actions"><button class="search-trigger" id="search-open"><span>⌕</span> Search anything <kbd>⌘ K</kbd></button><button class="icon-button notification" aria-label="Notifications" title="Notifications">♧<i></i></button><span class="avatar small-avatar">JD</span></div></header>
 <section class="page" id="page-content"></section>
 </main><div id="toast" class="toast" role="status"></div><div id="modal-root"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="app.js"></script></body></html>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="workspace.js"></script><script src="app.js"></script></body></html>
