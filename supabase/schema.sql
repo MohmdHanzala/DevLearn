@@ -173,6 +173,7 @@ declare v_code text := replace(gen_random_uuid()::text || gen_random_uuid()::tex
 begin
   if not exists (select 1 from public.organization_members where organization_id = p_organization_id and user_id = auth.uid() and role in ('owner', 'admin')) then raise exception 'Workspace admin access is required.'; end if;
   if nullif(trim(p_invited_email), '') is not null and position('@' in trim(p_invited_email)) < 2 then raise exception 'Enter a valid invitation email address.'; end if;
+  if nullif(trim(p_invited_email), '') is not null and nullif(trim(p_email_domain), '') is not null and split_part(lower(trim(p_invited_email)), '@', 2) <> lower(trim(p_email_domain)) then raise exception 'The invited email must match the domain restriction.'; end if;
   if p_department_id is not null and not exists (select 1 from public.departments where id = p_department_id and organization_id = p_organization_id) then raise exception 'Choose a department in this workspace.'; end if;
   insert into public.organization_invites(organization_id, department_id, invite_code, email_domain, invited_email, created_by)
   values (p_organization_id, p_department_id, v_code, nullif(lower(trim(p_email_domain)), ''), nullif(lower(trim(p_invited_email)), ''), auth.uid());
@@ -210,7 +211,7 @@ create or replace function public.review_workspace_join_request(p_request_id uui
 returns uuid language plpgsql security definer set search_path = public, pg_temp as $$
 declare v_request public.organization_join_requests%rowtype;
 begin
-  if p_decision not in ('approved', 'rejected') then raise exception 'Choose approve or reject.'; end if;
+  if p_decision is null or p_decision not in ('approved', 'rejected') then raise exception 'Choose approve or reject.'; end if;
   select * into v_request from public.organization_join_requests where id = p_request_id for update;
   if not found then raise exception 'Join request not found.'; end if;
   if not public.is_workspace_admin(v_request.organization_id) then raise exception 'Workspace admin access is required.'; end if;
