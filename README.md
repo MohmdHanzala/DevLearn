@@ -1,6 +1,6 @@
-# DevLearn
+# Onward
 
-DevLearn is a developer learning companion for individuals and teams across companies, departments, and email domains. People can keep notes private, create or join a workspace, invite colleagues across domains, and deliberately share learning notes with that workspace. It does not rank employees or expose private notes to administrators.
+Onward helps individuals and teams move work forward and learn from experience. Personal learning stays private. Team workspaces provide shared boards, membership and invitation management, and owner-only audit history.
 
 Personal workspaces are for individual learning. Company workspaces switch to a shared project tracker with Trello-style boards, stage lists, assigned cards, due dates, and drag-and-drop movement. Team task cards and lists are private to their organization through Supabase row-level security; the personal exercise and learning-note navigation is hidden in team workspaces.
 
@@ -15,7 +15,7 @@ Personal workspaces are for individual learning. Company workspaces switch to a 
 
 1. Create a Supabase project.
 2. In Project Settings → API, copy the Project URL and the publishable key (or legacy anon key).
-3. Open SQL Editor and run the complete [`supabase/schema.sql`](supabase/schema.sql). Wait for Supabase to report success before reloading DevLearn. The migration is safe to rerun and refreshes the PostgREST schema cache.
+3. Open SQL Editor and run the complete [`supabase/schema.sql`](supabase/schema.sql). Wait for Supabase to report success before reloading Onward. The migration is safe to rerun and refreshes the PostgREST schema cache.
 4. In Authentication → URL Configuration, set the Site URL to your deployed Vercel URL and add local or preview URLs to the allowed redirect URLs when needed.
 5. Configure email delivery and confirmation behavior before relying on sign-up emails in production.
 
@@ -53,5 +53,10 @@ This version provides private learning notes, opt-in workspace sharing, departme
 
 ## Troubleshooting database setup
 
-- If workspace creation says `Could not find the function public.create_workspace(p_name) in the schema cache`, the migration has not completed in the connected Supabase project or its API cache has not refreshed. Run the whole `supabase/schema.sql` again in that project's SQL Editor, wait for a success result, then wait briefly and reload DevLearn.
+- If workspace creation says `Could not find the function public.create_workspace(p_name) in the schema cache`, the migration has not completed in the connected Supabase project or its API cache has not refreshed. Run the whole `supabase/schema.sql` again in that project's SQL Editor, wait for a success result, then wait briefly and reload Onward.
 - If notes report missing tables/columns or row-level security errors, run that same complete migration. The app will show a database status banner and keep new unsynced notes in browser storage instead of claiming they were saved to Supabase.
+
+
+Workspace owners can view the audit log. Database row-level security denies audit-history reads to admins and members. Apply the latest complete supabase/schema.sql to enable it.
+
+Personal streak activity stores only calendar dates and stays private to the account. Dates use the browser's local calendar week, Monday through Sunday.

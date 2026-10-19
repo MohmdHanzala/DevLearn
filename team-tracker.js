@@ -1,6 +1,6 @@
 const teamTracker = (() => {
   let boards = [], lists = [], cards = [], members = [], selectedBoardId = null, loadedOrgId = null, currentPage = 'boards', loading = false, loadError = '';
-  const trackerKey = () => `devlearn-board:${currentWorkspace?.organization_id || ''}`;
+  const trackerKey = () => `onward-board:${currentWorkspace?.organization_id || ''}`;
   const dateLabel = value => value ? new Date(`${value}T12:00:00`).toLocaleDateString(undefined, {month:'short',day:'numeric'}) : '';
   const memberName = id => members.find(m => m.user_id === id)?.email?.split('@')[0] || 'Unassigned';
   const update = async (query, success='Saved.') => {
@@ -22,7 +22,7 @@ const teamTracker = (() => {
       if(memberResult.error) throw memberResult.error;
       loadedOrgId=org;
       boards = boardResult.data || []; members = memberResult.data || [];
-      selectedBoardId = boards.some(b => b.id === selectedBoardId) ? selectedBoardId : (boards.find(b=>b.id===localStorage.getItem(trackerKey()))?.id || boards[0]?.id || null);
+      selectedBoardId = boards.some(b => b.id === selectedBoardId) ? selectedBoardId : (boards.find(b=>b.id===(localStorage.getItem(trackerKey())||localStorage.getItem(trackerKey().replace('onward-','devlearn-'))))?.id || boards[0]?.id || null);
       if(selectedBoardId) {
         localStorage.setItem(trackerKey(), selectedBoardId);
         const [listResult, cardResult] = await Promise.all([
@@ -106,11 +106,22 @@ const teamTracker = (() => {
     const canInvite=['owner','admin'].includes(currentWorkspace.role);
     page.innerHTML=`<div class="tracker-heading"><div><div class="eyebrow">${esc(currentWorkspace.name)} · PEOPLE</div><h1>Your team</h1><p>People working together in this workspace.</p></div>${canInvite?'<button class="button-primary" data-workspace-manage>Invite a teammate <span>→</span></button>':''}</div><section class="team-members-grid">${members.map((m,i)=>`<article class="team-member-card"><span class="member-avatar member-avatar-large member-tone-${i%5}">${esc((m.email||'T').slice(0,1).toUpperCase())}</span><div><strong>${esc(m.email?.split('@')[0]||'Team member')}</strong><small>${esc(m.email||'')}</small></div><span class="member-role">${esc(m.role)}</span></article>`).join('')}</section>`;
   }
+  async function renderAuditLog() {
+    const page=document.querySelector('#page-content');
+    if(currentWorkspace?.role!=='owner'){page.innerHTML='<section class="tracker-empty"><div class="tracker-empty-icon">◷</div><h2>Owner access only</h2><p>Workspace audit history is visible only to the workspace owner.</p></section>';return;}
+    page.innerHTML='<section class="tracker-loading"><span class="tracker-spinner"></span><p>Loading owner audit history…</p></section>';
+    const {data,error}=await db.from('organization_audit_logs').select('id,actor_email,action,entity_type,entity_id,before_data,after_data,occurred_at').eq('organization_id',currentWorkspace.organization_id).order('occurred_at',{ascending:false}).limit(200);
+    if(error){page.innerHTML=`<section class="tracker-empty"><div class="tracker-empty-icon">!</div><h2>Audit history isn’t available</h2><p>${esc(/PGRST|does not exist|schema cache/i.test(error.message||'')?'Apply the latest supabase/schema.sql in the connected Supabase project, then reload.':error.message)}</p><button class="button-primary" data-tracker="audit-refresh">Try again</button></section>`;return;}
+    const label=x=>{const row=x.after_data||x.before_data||{};return row.name||row.title||row.email||row.invited_email||row.requested_email||row.role||x.entity_id||'Workspace record'};
+    const summary=x=>{const before=x.before_data||{},after=x.after_data||{};if(x.action==='INSERT')return `Created ${label(x)}`;if(x.action==='DELETE')return `Deleted ${label(x)}`;const changed=Object.keys(after).filter(k=>!['updated_at'].includes(k)&&JSON.stringify(after[k])!==JSON.stringify(before[k]));return `Updated ${label(x)}${changed.length?` · ${changed.slice(0,4).join(', ').replaceAll('_',' ')}`:''}`};
+    page.innerHTML=`<div class="tracker-heading"><div><div class="eyebrow">${esc(currentWorkspace.name)} · OWNER ONLY</div><h1>Workspace audit log</h1><p>Recent changes across members, invitations, departments, and team boards. Only the owner can read this history.</p></div><button class="button-secondary" data-tracker="audit-refresh">Refresh</button></div><section class="audit-timeline">${data?.length?data.map(x=>`<article class="audit-entry"><span class="audit-marker">${x.action==='DELETE'?'−':x.action==='INSERT'?'+':'↻'}</span><div class="audit-entry-main"><strong>${esc(summary(x))}</strong><small>${esc(x.entity_type.replaceAll('_',' '))} · ${esc(x.actor_email||'Workspace system')}</small></div><time datetime="${esc(x.occurred_at)}">${esc(new Date(x.occurred_at).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'}))}</time></article>`).join(''):'<div class="audit-empty"><strong>No workspace changes recorded yet.</strong><span>New member, invite, and board changes will appear here.</span></div>'}</section><p class="audit-retention">Showing the latest ${data?.length||0} changes.</p>`;
+  }
   document.addEventListener('click',async e=>{
     const boardTab=e.target.closest('[data-board]');if(boardTab){await switchBoard(boardTab.dataset.board);return;}
     const action=e.target.closest('[data-tracker]')?.dataset.tracker;if(!action)return;
     const btn=e.target.closest('[data-tracker]');
     if(action==='refresh')return refresh();
+    if(action==='audit-refresh')return renderAuditLog();
     if(action==='new-board')return openForm('board');
     if(action==='edit-board')return openForm('board',boards.find(b=>b.id===selectedBoardId)||{});
     if(action==='new-list')return openForm('list');
@@ -134,6 +145,6 @@ const teamTracker = (() => {
     catch(error) { card.list_id=oldListId;toast(error.message||'Could not move that card.'); }
     await refresh();
   });
-  return {render:async page=>{if(!currentWorkspace)return;currentPage=page;const content=document.querySelector('#page-content');if(content)content.innerHTML='<section class="tracker-loading"><span class="tracker-spinner"></span><p>Opening your team workspace…</p></section>';if(page==='members'){await renderMembers();return;}await load();renderBoards();}};
+  return {render:async page=>{if(!currentWorkspace)return;currentPage=page;const content=document.querySelector('#page-content');if(content)content.innerHTML='<section class="tracker-loading"><span class="tracker-spinner"></span><p>Opening your team workspace…</p></section>';if(page==='audit'){await renderAuditLog();return;}if(page==='members'){await renderMembers();return;}await load();renderBoards();}};
 })();
 function renderTeamTracker(page='boards') { return teamTracker.render(page); }
