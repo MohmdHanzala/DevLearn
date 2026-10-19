@@ -10,18 +10,22 @@
 <aside class="sidebar">
   <a class="brand" href="#home"><span class="brand-icon"><svg viewBox="0 0 24 24"><path d="M12 3.5 14.2 9.8 20.5 12l-6.3 2.2L12 20.5l-2.2-6.3L3.5 12l6.3-2.2L12 3.5Z"/><path d="m19 3 .7 2.3L22 6l-2.3.7L19 9l-.7-2.3L16 6l2.3-.7L19 3Z"/></svg></span><span>devlearn<span class="brand-dot">.</span></span></a>
   <div class="workspace-label"><span id="workspace-current">PERSONAL WORKSPACE</span> <button class="tiny-icon" title="Switch or manage workspaces" aria-label="Switch or manage workspaces">⌄</button></div>
-  <nav class="nav-group" aria-label="Main navigation">
+  <nav id="personal-nav-group" class="nav-group" aria-label="Personal learning navigation">
     <button class="nav-link active" data-page="home"><span class="nav-icon">⌂</span>Overview</button>
     <button class="nav-link" data-page="learn"><span class="nav-icon">◉</span>Explain my work</button>
     <button class="nav-link" data-page="practice"><span class="nav-icon">⌘</span>Practice lab</button>
     <button class="nav-link" data-page="library"><span class="nav-icon">▤</span>My library<span class="nav-count" id="library-count">4</span></button>
   </nav>
-  <div class="sidebar-divider"></div><div class="workspace-label">YOUR LEARNING</div>
-  <button class="nav-link" data-page="skills"><span class="nav-icon">◌</span>Skills & progress</button>
-  <button class="nav-link" data-page="review"><span class="nav-icon">↻</span>Review queue<span class="queue-dot"></span></button>
-  <div class="sidebar-bottom"><div class="streak-card"><div class="streak-top"><span class="flame">✳</span><span class="streak-num">4 day streak</span><span class="streak-week">THIS WEEK</span></div><div class="week-dots"><span class="done">M</span><span class="done">T</span><span class="done">W</span><span class="today">T</span><span>F</span><span>S</span><span>S</span></div><p>Little by little, a little becomes a lot.</p></div><button class="profile"><span class="avatar">JD</span><span class="profile-name">Jordan Davis<small>Personal workspace</small></span><span class="profile-more">···</span></button></div>
+  <nav id="team-nav-group" class="nav-group" aria-label="Team workspace navigation" hidden>
+    <button class="nav-link active" data-page="boards"><span class="nav-icon">▦</span>Boards</button>
+    <button class="nav-link" data-page="members"><span class="nav-icon">♙</span>Members</button>
+  </nav>
+  <div class="sidebar-divider" id="learning-divider"></div><div class="workspace-label" id="learning-label">YOUR LEARNING</div>
+  <button class="nav-link" data-team-hide data-page="skills"><span class="nav-icon">◌</span>Skills & progress</button>
+  <button class="nav-link" data-team-hide data-page="review"><span class="nav-icon">↻</span>Review queue<span class="queue-dot"></span></button>
+  <div class="sidebar-bottom"><div class="streak-card" id="learning-streak"><div class="streak-top"><span class="flame">✳</span><span class="streak-num">4 day streak</span><span class="streak-week">THIS WEEK</span></div><div class="week-dots"><span class="done">M</span><span class="done">T</span><span class="done">W</span><span class="today">T</span><span>F</span><span>S</span><span>S</span></div><p>Little by little, a little becomes a lot.</p></div><button class="profile"><span class="avatar">JD</span><span class="profile-name">Jordan Davis<small>Personal workspace</small></span><span class="profile-more">···</span></button></div>
 </aside>
-<main class="main"><header class="topbar"><div class="breadcrumbs"><span>Workspace</span><span class="crumb-slash">/</span><b id="crumb-current">Overview</b></div><div class="top-actions"><button class="search-trigger" id="search-open"><span>⌕</span> Search anything <kbd>⌘ K</kbd></button><button class="icon-button notification" aria-label="Notifications" title="Notifications">♧<i></i></button><span class="avatar small-avatar">JD</span></div></header>
+<main class="main"><header class="topbar"><div class="breadcrumbs"><span>Workspace</span><span class="crumb-slash">/</span><b id="crumb-current">Overview</b></div><div class="top-actions"><button class="search-trigger" id="search-open" data-team-hide><span>⌕</span> Search anything <kbd>⌘ K</kbd></button><button class="icon-button notification" aria-label="Notifications" title="Notifications">♧<i></i></button><span class="avatar small-avatar">JD</span></div></header>
 <section class="page" id="page-content"></section>
 </main><div id="toast" class="toast" role="status"></div><div id="modal-root"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="workspace.js"></script><script src="app.js"></script></body></html>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="workspace.js"></script><script src="team-tracker.js"></script><script src="app.js"></script></body></html>

@@ -2,6 +2,8 @@
 
 DevLearn is a developer learning companion for individuals and teams across companies, departments, and email domains. People can keep notes private, create or join a workspace, invite colleagues across domains, and deliberately share learning notes with that workspace. It does not rank employees or expose private notes to administrators.
 
+Personal workspaces are for individual learning. Company workspaces switch to a shared project tracker with Trello-style boards, stage lists, assigned cards, due dates, and drag-and-drop movement. Team task cards and lists are private to their organization through Supabase row-level security; the personal exercise and learning-note navigation is hidden in team workspaces.
+
 ## Services
 
 - Supabase Auth and Postgres with row-level security for accounts, personal notes, organizations, departments, and invitations.
@@ -31,6 +33,7 @@ The `/api/learn` response distinguishes rejected keys, model errors, quota limit
 ## Workspaces
 
 - Each account starts with a private personal workspace.
+- Team workspaces have shared project boards. Members can create boards and workflow lists, assign cards to current workspace members, add task details and due dates, and drag cards between stages. Board content is isolated to its organization by row-level security.
 - Any signed-in user can create a workspace with a company, domain, project, or department name. No ACME-specific name or email domain is hard-coded.
 - Owners and admins can add departments and create 14-day invitations addressed to a specific email. The email button opens a prefilled draft with a clickable invitation link. A recipient can create an account or sign in, verify the invited email, and is added directly to the workspace. The database checks the signed-in account email and email-confirmation status before granting membership.
 - An unaddressed invitation code is a join request: the person is added only after an owner or admin approves it. An administrator can optionally restrict invitations to one email domain.
@@ -46,7 +49,7 @@ Vercel Hobby is intended for personal, non-commercial use. Use a plan that permi
 
 ## Current scope
 
-This version provides private learning notes, opt-in workspace sharing, departments, email-addressed invitation links, and admin-approved onboarding by unaddressed invite code. It does not yet include SSO/SCIM, audit exports, retention controls, team analytics, or a reviewed-publication workflow. Workspace learning data is not an employee performance measure.
+This version provides private learning notes, opt-in workspace sharing, departments, email-addressed invitation links, admin-approved onboarding by unaddressed invite code, and shared workspace task boards. It does not yet include SSO/SCIM, audit exports, retention controls, team analytics, or a reviewed-publication workflow. Workspace learning data is not an employee performance measure.
 
 ## Troubleshooting database setup
 
