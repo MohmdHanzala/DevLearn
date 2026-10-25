@@ -249,6 +249,9 @@ begin
   select count(*) into v_target_count from public.team_board_cards
     where list_id = p_target_list_id and (p_target_list_id <> v_card.list_id or id <> v_card.id);
   if p_position < 0 or p_position > v_target_count then raise exception 'The requested card position is invalid.'; end if;
+  -- Let the audit trigger distinguish the dragged card from neighboring cards
+  -- whose positions shift as part of the same operation.
+  perform set_config('onward.audit_move_card_id', v_card.id::text, true);
   if v_card.list_id = p_target_list_id then
     if p_position < v_card.position then
       update public.team_board_cards set position = position + 1
@@ -417,9 +420,25 @@ declare
   v_org_id uuid;
   v_entity_id text;
   v_actor_email text;
+  v_move_card_id text;
+  v_from_list_name text;
+  v_to_list_name text;
 begin
   if tg_op <> 'INSERT' then v_old := to_jsonb(old); end if;
   if tg_op <> 'DELETE' then v_new := to_jsonb(new); end if;
+  if tg_table_name = 'team_board_cards' and tg_op = 'UPDATE' then
+    v_move_card_id := nullif(current_setting('onward.audit_move_card_id', true), '');
+    -- Position updates to neighboring cards are bookkeeping, not separate moves.
+    if v_move_card_id is not null and old.id::text <> v_move_card_id
+      and old.list_id is not distinct from new.list_id
+      and old.position is distinct from new.position then
+      return new;
+    end if;
+    select name into v_from_list_name from public.team_board_lists where id = old.list_id;
+    select name into v_to_list_name from public.team_board_lists where id = new.list_id;
+    v_old := v_old || jsonb_build_object('_list_name', coalesce(v_from_list_name, 'Removed list'));
+    v_new := v_new || jsonb_build_object('_list_name', coalesce(v_to_list_name, 'Removed list'));
+  end if;
   v_row := coalesce(v_new, v_old);
   if tg_table_name = 'organizations' then v_org_id := (v_row->>'id')::uuid;
   else v_org_id := (v_row->>'organization_id')::uuid; end if;
